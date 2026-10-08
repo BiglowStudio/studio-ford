@@ -1,0 +1,6 @@
+{
+  "sections": {
+    "archive": { "type": "sf-archive", "blocks": {}, "block_order": [], "settings": {} }
+  },
+  "order": ["archive"]
+}

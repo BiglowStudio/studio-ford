@@ -1,0 +1,14 @@
+{
+  "sections": {
+    "main": {
+      "type": "sf-collection",
+      "blocks": {
+        "ed-1": { "type": "editorial", "settings": { "size": "2x1", "before_product": 4, "on_page": 1 } },
+        "ed-2": { "type": "editorial", "settings": { "size": "1x2", "before_product": 10, "on_page": 1 } }
+      },
+      "block_order": ["ed-1", "ed-2"],
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}

@@ -1,0 +1,39 @@
+{%- comment -%}
+  Mobile sticky Add to Cart. Add this section to the product template (below main product).
+  It shows once the main Add to Cart button scrolls out of view, and clicks that button, so
+  the theme's own add-to-cart logic (cart drawer, validation, selling plans) is untouched.
+{%- endcomment -%}
+{{ 'sf-base.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign p = product
+  assign v = p.selected_or_first_available_variant
+-%}
+<div class="sf-sticky-atc" id="sf-sticky-atc-{{ section.id }}" data-sf-sticky-atc data-main-selector="{{ section.settings.main_button_selector | escape }}" aria-hidden="true">
+  <div class="sf-sticky-atc__meta">
+    <p class="sf-sticky-atc__title">{{ p.title | escape }}</p>
+    <p class="sf-sticky-atc__sub" data-sf-sticky-sub>
+      <span data-sf-sticky-price>{{ v.price | money }}</span>
+      {%- if p.has_only_default_variant == false %} · <span data-sf-sticky-variant>{{ v.title | escape }}</span>{% endif -%}
+    </p>
+  </div>
+  <button type="button" class="sf-btn" data-sf-sticky-button{% unless v.available %} disabled{% endunless %}>
+    {%- if v.available -%}{{ section.settings.button_label | default: 'Add to cart' }}{%- else -%}Sold out{%- endif -%}
+  </button>
+  <script type="application/json" data-sf-variants>
+    {{ p.variants | json }}
+  </script>
+</div>
+<script src="{{ 'sf-sticky-atc.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "SF Sticky Add to Cart",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "Add to cart" },
+    { "type": "text", "id": "main_button_selector", "label": "Main add-to-cart button selector", "default": "form[action*='/cart/add'] [type='submit'][name='add']", "info": "CSS selector of the theme's own Add to Cart button. The default works for Dawn-based themes." }
+  ],
+  "presets": [{ "name": "SF Sticky Add to Cart" }],
+  "enabled_on": { "templates": ["product"] }
+}
+{% endschema %}

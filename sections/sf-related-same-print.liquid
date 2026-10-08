@@ -1,0 +1,79 @@
+{{ 'sf-base.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  "You may also like" — Same Print.
+  Shows other product TYPES in the same print as the current product (quilt, throw, pillow, robe…).
+
+  How we find them (first match wins):
+    1. product.metafields.custom.same_print  — a list of product references, set by hand
+    2. a Collection named by print: handle "print-<print-handle>", where the print is
+       product.metafields.custom.print (single line text OR metaobject reference), or a product tag "print:<Name>"
+       -> make one automated collection per print, condition "Product metafield Print equals <Name>" (or tag).
+  Liquid can't search products by metafield, so the collection is the lookup table.
+{%- endcomment -%}
+{%- liquid
+  assign cur = product
+  assign print_name = cur.metafields.custom.print.value
+  if print_name.name
+    assign print_name = print_name.name
+  endif
+  if print_name == blank
+    for tag in cur.tags
+      assign prefix = tag | slice: 0, 6 | downcase
+      if prefix == 'print:'
+        assign print_name = tag | slice: 6, 100 | strip
+        break
+      endif
+    endfor
+  endif
+
+  assign candidates = cur.metafields.custom.same_print.value
+  if candidates == blank and print_name != blank
+    assign handle = print_name | handleize | prepend: 'print-'
+    assign candidates = collections[handle].products
+  endif
+
+  assign shown = 0
+  assign seen_types = '|' | append: cur.type | append: '|'
+  assign max = section.settings.max_products
+-%}
+{%- if candidates != blank -%}
+  <section class="sf-related sf-related__same-print">
+    <div class="sf-wrap">
+      <div class="sf-section__head">
+        <div>
+          {%- if print_name != blank -%}<p class="sf-eyebrow">{{ print_name | escape }}</p>{%- endif -%}
+          <h2 class="sf-heading" style="font-size: clamp(22px, 3vw, 34px);">{{ section.settings.heading | escape }}</h2>
+        </div>
+      </div>
+      <div class="sf-related__grid">
+        {%- for item in candidates -%}
+          {%- if item.id == cur.id or item.available == false -%}{%- continue -%}{%- endif -%}
+          {%- comment -%} one of each product type, so the row reads quilt / throw / pillow / robe {%- endcomment -%}
+          {%- unless section.settings.one_per_type == false -%}
+            {%- assign type_key = '|' | append: item.type | append: '|' -%}
+            {%- if seen_types contains type_key -%}{%- continue -%}{%- endif -%}
+            {%- assign seen_types = seen_types | append: type_key -%}
+          {%- endunless -%}
+          {%- render 'sf-product-card', product: item, quick_add: section.settings.quick_add, quick_add_style: 'inline', ratio: '4 / 5', sizes: '(min-width: 990px) 25vw, 50vw' -%}
+          {%- assign shown = shown | plus: 1 -%}
+          {%- if shown >= max -%}{%- break -%}{%- endif -%}
+        {%- endfor -%}
+      </div>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "SF Same Print",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "More in this print" },
+    { "type": "range", "id": "max_products", "min": 2, "max": 8, "step": 1, "default": 4, "label": "Max products" },
+    { "type": "checkbox", "id": "one_per_type", "label": "Only one product per type", "default": true },
+    { "type": "checkbox", "id": "quick_add", "label": "Quick Add", "default": false }
+  ],
+  "presets": [{ "name": "SF Same Print" }],
+  "enabled_on": { "templates": ["product"] }
+}
+{% endschema %}

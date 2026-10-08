@@ -1,0 +1,29 @@
+# DRAFT — validate against the current Admin GraphQL schema before running (Admin API `checkoutBrandingUpsert`).
+# Needs the `write_checkout_branding_settings` scope. Full checkout customisation is a Shopify Plus feature;
+# on other plans use Admin > Settings > Checkout > Customize (logo, colours, fonts, buttons) and match these values.
+# Run against the PREVIEW/checkout profile only, after the client approves. Not applied by this repo.
+#
+# Studio Ford treatment: pure black on white, hairline borders, square corners, uppercase buttons.
+mutation StudioFordCheckoutBranding($profileId: ID!) {
+  checkoutBrandingUpsert(
+    checkoutProfileId: $profileId
+    checkoutBrandingInput: {
+      designSystem: {
+        colors: {
+          schemes: {
+            scheme1: {
+              base:          { background: "#FFFFFF", text: "#000000", border: "#000000", accent: "#000000" }
+              control:       { background: "#FFFFFF", text: "#000000", border: "#000000", accent: "#000000" }
+              primaryButton: { background: "#000000", text: "#FFFFFF", border: "#000000", hover: { background: "#FFFFFF", text: "#000000", border: "#000000" } }
+              secondaryButton: { background: "#FFFFFF", text: "#000000", border: "#000000" }
+            }
+          }
+        }
+        cornerRadius: { base: 0 }
+      }
+    }
+  ) {
+    checkoutBranding { designSystem { cornerRadius { base } } }
+    userErrors { field message code }
+  }
+}

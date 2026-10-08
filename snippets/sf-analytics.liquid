@@ -1,0 +1,46 @@
+{%- comment -%}
+  Studio Ford analytics: PostHog (preferred) with Google Analytics 4 as fallback.
+  Render once in layout/theme.liquid, just before </head>:   {% render 'sf-analytics' %}
+
+  Configure via the two assigns below (public keys only; safe to ship in theme code).
+  Leave both blank to disable. Funnel events are emitted through one function, sfTrack().
+{%- endcomment -%}
+{%- liquid
+  assign posthog_key = ''
+  assign posthog_host = 'https://us.i.posthog.com'
+  assign ga4_id = ''
+-%}
+{%- if posthog_key != blank or ga4_id != blank -%}
+{%- if posthog_key != blank -%}
+<script>window.sfPosthogConfig = { key: {{ posthog_key | json }}, host: {{ posthog_host | json }} };</script>
+<script src="{{ 'sf-posthog-loader.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+{%- if ga4_id != blank and posthog_key == blank -%}
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ ga4_id }}"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',{{ ga4_id | json }});</script>
+{%- endif -%}
+<script>
+  /* One entry point for all funnel events */
+  window.sfTrack = function (name, props) {
+    props = props || {};
+    try { if (window.posthog && posthog.capture) posthog.capture(name, props); } catch (e) {}
+    try { if (window.gtag) gtag('event', name, props); } catch (e) {}
+  };
+  document.addEventListener('DOMContentLoaded', function () {
+  {%- if template.name == 'product' -%}
+    sfTrack('product_viewed', { product_id: {{ product.id | json }}, title: {{ product.title | json }}, product_type: {{ product.type | json }}, price: {{ product.price | divided_by: 100.0 | json }} });
+  {%- elsif template.name == 'collection' -%}
+    sfTrack('collection_viewed', { collection: {{ collection.handle | json }}, product_count: {{ collection.products_count | json }} });
+  {%- elsif template.name == 'search' -%}
+    sfTrack('search_performed', { query: {{ search.terms | json }}, results: {{ search.results_count | json }} });
+  {%- endif -%}
+  });
+  document.addEventListener('sf:add-to-cart', function (e) { sfTrack('add_to_cart', (e.detail && e.detail.source) ? { source: e.detail.source } : {}); });
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href*="/checkout"], button[name="checkout"], [name="checkout"]');
+    if (a) sfTrack('checkout_started', { source: location.pathname });
+    var f = e.target.closest && e.target.closest('.sf-chip, .sf-print-label');
+    if (f) sfTrack('collection_filter_used', { filter: f.textContent.trim().replace(/\s+/g, ' ') });
+  });
+</script>
+{%- endif -%}

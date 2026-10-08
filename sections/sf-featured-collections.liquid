@@ -1,0 +1,71 @@
+{{ 'sf-base.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'sf-quick-add.js' | asset_url }}" defer="defer"></script>
+{%- comment -%}
+  Featured collections: each block = one collection, an editorial lead image + a row of products.
+  Alternates left/right for rhythm. Add one block per priority collection.
+{%- endcomment -%}
+<section class="sf-section" style="--sf-section-pad: {{ section.settings.padding }}px;">
+  <div class="sf-wrap">
+    {%- if section.settings.heading != blank -%}
+      <div class="sf-section__head"><h2 class="sf-heading">{{ section.settings.heading | escape }}</h2></div>
+    {%- endif -%}
+    <div class="sf-fc">
+      {%- for block in section.blocks -%}
+        {%- assign c = block.settings.collection -%}
+        {%- if c == blank -%}{%- continue -%}{%- endif -%}
+        {%- assign flip = false -%}
+        {%- assign odd = forloop.index0 | modulo: 2 -%}
+        {%- if section.settings.alternate and odd == 1 -%}{%- assign flip = true -%}{%- endif -%}
+        <div class="sf-fc__row{% if flip %} sf-fc__row--flip{% endif %}" {{ block.shopify_attributes }}>
+          <a class="sf-fc__lead" href="{{ c.url }}">
+            {%- assign lead = block.settings.image | default: c.featured_image -%}
+            {%- if lead -%}
+              {{ lead | image_url: width: 1400 | image_tag: widths: '600, 900, 1400', sizes: '(min-width: 990px) 40vw, 100vw', loading: 'lazy', alt: c.title }}
+            {%- else -%}
+              {{ 'collection-1' | placeholder_svg_tag }}
+            {%- endif -%}
+            <div class="sf-fc__lead-cap">
+              {%- if block.settings.eyebrow != blank -%}<p class="sf-eyebrow" style="color:#fff;margin-bottom:6px;">{{ block.settings.eyebrow | escape }}</p>{%- endif -%}
+              <h3 class="sf-heading">{{ block.settings.title | default: c.title | escape }}</h3>
+              <span class="sf-link" style="margin-top:10px;display:inline-block;">{{ block.settings.cta | default: 'Shop the collection' | escape }}</span>
+            </div>
+          </a>
+          <div class="sf-fc__products">
+            {%- for product in c.products limit: block.settings.product_count -%}
+              {%- render 'sf-product-card', product: product, quick_add: section.settings.quick_add, quick_add_style: 'inline', ratio: '4 / 5', sizes: '(min-width: 990px) 20vw, 45vw' -%}
+            {%- endfor -%}
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "SF Featured Collections",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Section heading", "default": "Shop the collections" },
+    { "type": "checkbox", "id": "alternate", "label": "Alternate image left / right", "default": true },
+    { "type": "checkbox", "id": "quick_add", "label": "Quick Add on products", "default": true },
+    { "type": "range", "id": "padding", "min": 0, "max": 120, "step": 4, "unit": "px", "default": 56, "label": "Vertical padding" }
+  ],
+  "blocks": [
+    {
+      "type": "collection",
+      "name": "Collection",
+      "settings": [
+        { "type": "collection", "id": "collection", "label": "Collection" },
+        { "type": "text", "id": "eyebrow", "label": "Eyebrow (e.g. New / Priority)" },
+        { "type": "text", "id": "title", "label": "Title override" },
+        { "type": "text", "id": "cta", "label": "Link label", "default": "Shop the collection" },
+        { "type": "image_picker", "id": "image", "label": "Lead image", "info": "Defaults to the collection image." },
+        { "type": "range", "id": "product_count", "min": 3, "max": 6, "step": 3, "default": 3, "label": "Products shown" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [{ "name": "SF Featured Collections", "blocks": [{ "type": "collection" }, { "type": "collection" }] }]
+}
+{% endschema %}

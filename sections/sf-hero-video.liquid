@@ -1,0 +1,55 @@
+{{ 'sf-base.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'sf-quick-add.js' | asset_url }}" defer="defer"></script>
+{%- comment -%}
+  Editorial-framed homepage video. Not full-bleed: the frame width is adjustable (default 88%) and
+  keeps white space around it. Falls back to the poster image if no video is set.
+{%- endcomment -%}
+<section class="sf-hero"
+  style="--sf-hero-width: {{ section.settings.width }}%; --sf-hero-ratio-d: {{ section.settings.ratio_desktop | replace: ':', ' / ' }}; --sf-hero-ratio-m: {{ section.settings.ratio_mobile | replace: ':', ' / ' }}; --sf-hero-pad: {{ section.settings.padding }}px;">
+  <div class="sf-hero__frame">
+    {%- if section.settings.video -%}
+      {{ section.settings.video | video_tag: autoplay: true, loop: true, muted: true, playsinline: true, controls: false, image_size: '1920x', poster: section.settings.poster }}
+    {%- elsif section.settings.poster -%}
+      {{ section.settings.poster | image_url: width: 2400 | image_tag: widths: '800, 1200, 1800, 2400', sizes: '90vw', loading: 'eager', fetchpriority: 'high', alt: section.settings.heading }}
+    {%- else -%}
+      {{ 'hero-apparel-1' | placeholder_svg_tag }}
+    {%- endif -%}
+
+    {%- if section.settings.heading != blank or section.settings.button_label != blank -%}
+      <div class="sf-hero__overlay">
+        {%- if section.settings.eyebrow != blank -%}<p class="sf-eyebrow" style="color:#fff;">{{ section.settings.eyebrow | escape }}</p>{%- endif -%}
+        {%- if section.settings.heading != blank -%}<h1 class="sf-heading">{{ section.settings.heading | escape }}</h1>{%- endif -%}
+        {%- if section.settings.button_label != blank and section.settings.button_link != blank -%}
+          <a class="sf-btn" href="{{ section.settings.button_link }}">{{ section.settings.button_label | escape }}</a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+    {%- if section.settings.video and section.settings.sound_toggle -%}
+      <button type="button" class="sf-hero__sound" data-sf-sound aria-pressed="false">Sound</button>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "SF Hero Video",
+  "tag": "div",
+  "settings": [
+    { "type": "video", "id": "video", "label": "Video", "info": "Upload the existing homepage video to Shopify Files / pick it here." },
+    { "type": "image_picker", "id": "poster", "label": "Poster / fallback image" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow" },
+    { "type": "text", "id": "heading", "label": "Heading" },
+    { "type": "text", "id": "button_label", "label": "Button label" },
+    { "type": "url", "id": "button_link", "label": "Button link" },
+    { "type": "checkbox", "id": "sound_toggle", "label": "Show sound toggle", "default": false },
+    { "type": "header", "content": "Framing" },
+    { "type": "range", "id": "width", "min": 60, "max": 100, "step": 2, "unit": "%", "default": 88, "label": "Frame width (desktop)", "info": "Below 100 keeps the editorial frame. The current site's video is smaller — raise this to increase presence." },
+    { "type": "select", "id": "ratio_desktop", "label": "Desktop ratio", "default": "16:9", "options": [
+      { "value": "21:9", "label": "Cinematic 21:9" }, { "value": "16:9", "label": "Wide 16:9" }, { "value": "3:2", "label": "3:2" }, { "value": "4:3", "label": "4:3" } ] },
+    { "type": "select", "id": "ratio_mobile", "label": "Mobile ratio", "default": "4:5", "options": [
+      { "value": "1:1", "label": "Square" }, { "value": "4:5", "label": "Portrait 4:5" }, { "value": "9:16", "label": "Tall 9:16" } ] },
+    { "type": "range", "id": "padding", "min": 0, "max": 80, "step": 4, "unit": "px", "default": 24, "label": "Vertical padding" }
+  ],
+  "presets": [{ "name": "SF Hero Video" }]
+}
+{% endschema %}

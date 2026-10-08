@@ -1,0 +1,22 @@
+{%- comment -%}
+  Editorial tile used inside .sf-grid. Sizes are columns x rows: 1x1, 1x2, 2x1.
+  Accepts: block (section block with settings: size, image, video, heading, caption, link)
+  Drop it anywhere inside an <ul class="sf-grid"> — it renders its own <li>.
+{%- endcomment -%}
+{%- assign s = block.settings -%}
+<li class="sf-ed sf-ed--{{ s.size | default: '1x1' }}" {{ block.shopify_attributes }}>
+  {%- if s.video -%}
+    {{ s.video | video_tag: autoplay: true, loop: true, muted: true, playsinline: true, controls: false, image_size: '1100x', class: 'sf-ed__video' }}
+  {%- elsif s.image -%}
+    {{ s.image | image_url: width: 1400 | image_tag: widths: '500, 800, 1100, 1400', sizes: '(min-width: 990px) 50vw, 100vw', loading: 'lazy', alt: s.image.alt | default: s.heading }}
+  {%- else -%}
+    {{ 'lifestyle-1' | placeholder_svg_tag }}
+  {%- endif -%}
+  {%- if s.heading != blank or s.caption != blank -%}
+    <div class="sf-ed__cap">
+      {%- if s.heading != blank -%}<strong>{{ s.heading | escape }}</strong>{%- endif -%}
+      {%- if s.caption != blank -%}<span>{{ s.caption | escape }}</span>{%- endif -%}
+    </div>
+  {%- endif -%}
+  {%- if s.link != blank -%}<a class="sf-ed__link" href="{{ s.link }}" aria-label="{{ s.heading | default: s.caption | default: 'View' | escape }}"></a>{%- endif -%}
+</li>

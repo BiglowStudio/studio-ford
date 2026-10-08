@@ -1,0 +1,97 @@
+{%- comment -%}
+  Studio Ford product card: hover alternate image + Quick Add.
+
+  Accepts:
+  - product: {Product} required
+  - ratio: {String} CSS aspect-ratio, e.g. "4 / 5" (default "4 / 5")
+  - quick_add: {Boolean} show Quick Add (default false)
+  - quick_add_style: "overlay" (hover on desktop) | "inline" (always visible) (default "overlay")
+  - hover_image: {Boolean} swap to alternate image on hover (default true)
+  - show_type: {Boolean} show product type above title (default true)
+  - lazy: {Boolean} lazy-load image (default true)
+  - sizes: {String} img sizes attribute
+
+  Alternate image priority:
+    1. product metafield custom.hover_image (File reference, image) — pick a lifestyle/detail shot
+    2. second product media item
+{%- endcomment -%}
+{%- liquid
+  assign p = product
+  assign ratio = ratio | default: '4 / 5'
+  assign sizes = sizes | default: '(min-width: 990px) 33vw, 50vw'
+  if show_type == nil
+    assign show_type = true
+  endif
+  if hover_image == nil
+    assign hover_image = true
+  endif
+  assign main_image = p.featured_image
+  assign alt_image = nil
+  if hover_image
+    assign alt_image = p.metafields.custom.hover_image.value
+    if alt_image == blank
+      assign second = p.images[1]
+      if second != blank
+        assign alt_image = second
+      endif
+    endif
+  endif
+  assign loading_attr = 'lazy'
+  if lazy == false
+    assign loading_attr = 'eager'
+  endif
+  assign style_class = quick_add_style | default: 'overlay'
+  assign single = false
+  if p.variants.size == 1
+    assign single = true
+  endif
+-%}
+{%- if p != blank -%}
+<article class="sf-card{% if quick_add and style_class == 'overlay' %} sf-card--quick-overlay{% endif %}" style="--sf-card-ratio: {{ ratio }};" data-product-id="{{ p.id }}">
+  <div class="sf-card__media">
+    {%- if p.compare_at_price > p.price and p.available -%}
+      <span class="sf-card__badge">Sale</span>
+    {%- elsif p.available == false -%}
+      <span class="sf-card__badge">Sold out</span>
+    {%- endif -%}
+    {%- if main_image -%}
+      {{ main_image | image_url: width: 1000 | image_tag: widths: '360, 540, 720, 1000', sizes: sizes, loading: loading_attr, class: 'sf-card__img sf-card__img--main', alt: main_image.alt | default: p.title }}
+    {%- else -%}
+      {{ 'product-1' | placeholder_svg_tag: 'sf-card__img' }}
+    {%- endif -%}
+    {%- if alt_image -%}
+      {{ alt_image | image_url: width: 1000 | image_tag: widths: '360, 540, 720, 1000', sizes: sizes, loading: 'lazy', class: 'sf-card__img sf-card__img--alt', alt: '' }}
+    {%- endif -%}
+  </div>
+  <div class="sf-card__info">
+    {%- if show_type and p.type != blank -%}<span class="sf-card__type">{{ p.type }}</span>{%- endif -%}
+    <h3 class="sf-card__title"><a href="{{ p.url }}">{{ p.title | escape }}</a></h3>
+    <div class="sf-card__price">
+      {%- if p.price_varies and p.compare_at_price <= p.price -%}From {% endif -%}
+      {{ p.price | money }}
+      {%- if p.compare_at_price > p.price -%}<s>{{ p.compare_at_price | money }}</s>{%- endif -%}
+    </div>
+  </div>
+
+  {%- if quick_add and p.available -%}
+    <div class="sf-quick" data-sf-quick>
+      <form method="post" action="{{ routes.cart_add_url }}" accept-charset="UTF-8" class="sf-quick__form{% if single %} sf-quick__form--single{% endif %}" data-sf-quick-form data-product-title="{{ p.title | escape }}">
+        {%- if single -%}
+          <input type="hidden" name="id" value="{{ p.selected_or_first_available_variant.id }}">
+        {%- else -%}
+          <label class="sf-visually-hidden" for="sf-qa-{{ section.id }}-{{ p.id }}">Choose option for {{ p.title | escape }}</label>
+          <select class="sf-quick__select" name="id" id="sf-qa-{{ section.id }}-{{ p.id }}" required>
+            <option value="" disabled selected>Select {{ p.options_with_values.first.name | default: 'option' | downcase }}</option>
+            {%- for v in p.variants -%}
+              <option value="{{ v.id }}"{% unless v.available %} disabled{% endunless %}>{{ v.title }}{% unless v.available %} — sold out{% endunless %}</option>
+            {%- endfor -%}
+          </select>
+        {%- endif -%}
+        <input type="hidden" name="quantity" value="1">
+        <button type="submit" class="sf-btn" data-sf-quick-submit>Quick add</button>
+      </form>
+      <p class="sf-quick__status" role="status" aria-live="polite" data-sf-quick-status></p>
+    </div>
+  {%- endif -%}
+</article>
+{%- endif -%}
